@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monthly Budget Tracker</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f2f8f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 92%;
+      max-width: 640px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #004d00, #00695c);
+      color: white;
+      padding: 18px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header .title { flex-grow: 1; text-align: center; }
+    .settings-btn {
+        background: none; border: none; font-size: 1.5rem; color: white;
+        cursor: pointer; padding: 0 10px;
+    }
+
+    .cycle-nav {
+        background-color: #116a40;
+        color: #e0f2f1;
+        text-align: center;
+        padding: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .cycle-nav button {
+        background: none; border: none; color: white; font-size: 1.5rem;
+        cursor: pointer; font-weight: bold; padding: 0 15px;
+    }
+
+    #categories { padding: 12px 12px 6px 12px; }
+
+    .category {
+      background-color: #EAF8F1;
+      border: 1px solid #36C591;
+      border-radius: 10px;
+      margin: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    .category-top {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .cat-left { font-weight: 700; color:#0f5e3e; }
+    .cat-right { display: flex; align-items: center; gap: 8px; font-weight:700; color:#0f5e3e; font-size:0.95rem; }
+    .cat-right .negative { color:#b91c1c; }
+
+    .progress {
+      background-color: #e9efe9;
+      border-radius: 10px;
+      height: 24px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      background-color: #67D5AD;
+      height: 100%;
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: #064a36;
+      font-weight: 700;
+      transition: width 0.35s ease;
+      font-size: 0.9rem;
+    }
+
+    .controls { display: flex; flex-direction: column; gap: 8px; }
+    .controls-bottom { display: flex; gap: 8px; align-items: center; }
+    
+    input[type="text"], input[type="number"], input[type="date"] {
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #cfdccc;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .controls-bottom input[type="number"] { width: 100px; }
+    .controls-bottom input[type="date"] { flex: 1; }
+    .controls-bottom .btn { flex-shrink: 0; }
+
+    .btn {
+      background-color: #076442;
+      color:white;
+      border:none;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:600;
+      font-family: "Segoe UI", sans-serif;
+    }
+    .btn:hover { opacity:0.95; }
+
+    .icon-btn {
+      background-color: #076442;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .icon-btn:hover { opacity: 0.9; }
+    
+    .add-block {
+      padding: 12px;
+      margin: 0 12px 12px 12px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:center;
+    }
+    .add-block input { flex: 1; }
+
+    .summary {
+      background-color: #157F4C;
+      color: white;
+      padding: 14px;
+      text-align: center;
+      border-radius: 0 0 12px 12px;
+      font-size: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .summary div { font-weight:700; }
+    
+    .chart-container {
+        width: 100%;
+        max-width: 250px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    #expensePieChart {
+        background-color: rgba(51, 153, 104, 1);
+        border-radius: 8px;
+        padding: 5px;
+    }
+    
+    .export-buttons {
+        margin-top: 15px;
+    }
+    .export-buttons .btn {
+        background-color: #f2f8f5;
+        color: #076442;
+        font-weight: 700;
+    }
+
+    #historicalSummary {
+        padding: 12px;
+    }
+    #historicalSummary h3 {
+        color: #0f5e3e;
+        text-align: center;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+    .hist-month-bar {
+        margin-bottom: 12px;
+    }
+    .hist-month-bar .label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    .multi-progress-bar {
+        display: flex;
+        height: 22px;
+        background-color: #e9efe9;
+        border-radius: 8px;
+        overflow: hidden;
+        width: 100%;
+    }
+    .multi-progress-bar-segment {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+    .modal-header h3 { margin: 0; color: #0f5e3e;}
+    .close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; gap: 10px; }
+    
+    @media (max-width: 600px) {
+        body { font-size: 16px; }
+        .container { margin: 0; width: 100%; min-height: 100vh; border-radius: 0; box-shadow: none; }
+        .header, .summary { border-radius: 0; }
+        .add-block, .controls-bottom, .category-top { flex-direction: column; align-items: stretch; }
+        .controls-bottom input[type="number"] { width: auto; }
+        .category-top { gap: 10px; }
+        .cat-right { justify-content: space-between; }
+        .modal-content { width: 95%; margin: 25% auto; }
+        .chart-container { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <div class="header">
+      <div class="title">💰 Budget Tracker</div>
+      <button class="settings-btn" onclick="manageSettings()" title="Settings">⚙️</button>
+    </div>
+    <div class="cycle-nav">
+      <button onclick="navigateCycle(-1)" title="Previous Month">‹</button>
+      <span id="cycleDisplay"></span>
+      <button onclick="navigateCycle(1)" title="Next Month">›</button>
+    </div>
+
+    <div id="categories" aria-live="polite"></div>
+
+    <div class="add-block">
+      <input id="newName" type="text" placeholder="New category name" />
+      <input id="newBudget" type="number" placeholder="Budget amount" />
+      <button class="btn" onclick="addCategory()">Add Category</button>
+    </div>
+
+    <div class="summary" id="summary">
+      <div id="totalBudget">Total Budget: ₹0</div>
+      <div id="totalSpent">Total Spent (this cycle): ₹0</div>
+      <div id="totalRemaining">Remaining (this cycle): ₹0</div>
+      <div class="chart-container">
+        <canvas id="expensePieChart"></canvas>
+      </div>
+      <div class="export-buttons">
+          <button class="btn" onclick="exportCSV()">Export All Data (CSV)</button>
+      </div>
+    </div>
+    
+    <div id="historicalSummary"></div>
+  </div>
+
+  <div id="historyModal" class="modal"> <div class="modal-content"> <div class="modal-header"> <h3 id="modalTitle"></h3> <span class="close-btn" onclick="closeModal()">&times;</span> </div> <div id="modalBody"></div> </div> </div>
+
+<script>
+const CATEGORIES_KEY = "budget_categories_v8";
+const SETTINGS_KEY = "budget_settings_v8";
+
+let categories = JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || [
+  { name: "Groceries", budget: 5000, expenses: [] },
+  { name: "Bills", budget: 3000, expenses: [] },
+  { name: "Entertainment", budget: 2000, expenses: [] }
+];
+let budgetSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { cycleStartDay: 1 };
+let viewingDate = new Date();
+let expensePieChart;
+
+const CHART_COLORS = ['#4CAF50','#2196F3','#FFC107','#E91E63','#9C27B0','#FF9800','#00BCD4','#8BC34A','#607D8B','#FF5722'];
+
+function save() {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(budgetSettings));
+}
+
+function getCycleDates(dateForCycle) {
+    const startDay = budgetSettings.cycleStartDay;
+    const now = new Date(dateForCycle);
+    let cycleStartDate = new Date(now.getFullYear(), now.getMonth(), startDay);
+    if (now.getDate() < startDay) {
+        cycleStartDate.setMonth(cycleStartDate.getMonth() - 1);
+    }
+    let cycleEndDate = new Date(cycleStartDate.getFullYear(), cycleStartDate.getMonth() + 1, startDay - 1);
+    cycleEndDate.setHours(23, 59, 59, 999);
+    return { cycleStartDate, cycleEndDate };
+}
+
+function navigateCycle(direction) {
+    viewingDate.setMonth(viewingDate.getMonth() + direction);
+    render();
+}
+
+function render() {
+  const { cycleStartDate, cycleEndDate } = getCycleDates(viewingDate);
+  // UPDATED LINE FOR MAIN CYCLE DISPLAY
+  document.getElementById('cycleDisplay').textContent = 
+    `${cycleStartDate.toLocaleDateString('en-GB')} - ${cycleEndDate.toLocaleDateString('en-GB')}`;
+
+  const container = document.getElementById("categories");
+  container.innerHTML = "";
+  let totalBudget = 0, totalSpentInCycle = 0;
+
+  categories.forEach((cat, idx) => {
+    const expensesInCycle = cat.expenses.filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate);
+    const spentInCycle = expensesInCycle.reduce((acc, curr) => acc + curr.amount, 0);
+    const bud = Math.round(cat.budget);
+    const remainingInCycle = bud - spentInCycle;
+    
+    totalBudget += bud;
+    totalSpentInCycle += spentInCycle;
+
+    let percentRemaining = (remainingInCycle / bud) * 100;
+    percentRemaining = Math.max(0, Math.min(100, isFinite(percentRemaining) ? percentRemaining : 0));
+    
+    const item = document.createElement("div"); item.className = "category";
+    item.innerHTML = `
+      <div class="category-top">
+        <div class="cat-left">${escapeHtml(cat.name)}</div>
+        <div class="cat-right">
+          <span><span class="${remainingInCycle < 0 ? 'negative' : ''}">${Math.round(remainingInCycle)}</span> / ${bud}</span>
+          <button class="icon-btn" onclick="showHistory(${idx})" title="View Full History">🕰️</button>
+          <button class="icon-btn" onclick="manageCategory(${idx})" title="Manage Category">✏️</button>
+        </div>
+      </div>
+      <div class="progress"><div class="progress-bar" style="width: ${percentRemaining}%;">${Math.floor(percentRemaining)}%</div></div>
+      <div class="controls">
+        <input type="text" id="desc-${idx}" placeholder="Expense description" />
+        <div class="controls-bottom">
+            <input type="number" id="expense-${idx}" placeholder="Amount" min="0" />
+            <input type="date" id="date-${idx}" value="${new Date().toISOString().slice(0, 10)}"/>
+            <button class="btn" onclick="addExpense(${idx})">Add</button>
+        </div>
+      </div>`;
+    container.appendChild(item);
+  });
+
+  document.getElementById("totalBudget").textContent = `Total Budget: ₹${totalBudget}`;
+  document.getElementById("totalSpent").textContent = `Total Spent (this cycle): ₹${Math.round(totalSpentInCycle)}`;
+  document.getElementById("totalRemaining").textContent = `Remaining (this cycle): ₹${Math.round(totalBudget - totalSpentInCycle)}`;
+
+  updatePieChart(cycleStartDate, cycleEndDate);
+  renderHistoricalSummary();
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+function addExpense(index) {
+  const amountInput = document.getElementById(`expense-${index}`);
+  const descInput = document.getElementById(`desc-${index}`);
+  const dateInput = document.getElementById(`date-${index}`);
+  const amount = parseFloat(amountInput.value);
+  const description = descInput.value.trim();
+  const date = dateInput.value;
+  if (!amount || amount <= 0 || !description || !date) return alert("Please fill all expense fields.");
+  categories[index].expenses.push({ amount, description, date });
+  save(); amountInput.value = ""; descInput.value = "";
+  render();
+}
+
+function addCategory() {
+  const name = document.getElementById("newName").value.trim();
+  const budget = parseFloat(document.getElementById("newBudget").value);
+  if (!name || !isFinite(budget) || budget <= 0) return alert("Enter valid name and budget");
+  categories.push({ name, budget: Math.round(budget), expenses: [] });
+  document.getElementById("newName").value = ""; document.getElementById("newBudget").value = "";
+  save(); render();
+}
+
+function manageSettings() {
+    const newDay = parseInt(prompt(`Enter the start day of your monthly budget cycle (1-28).`, budgetSettings.cycleStartDay), 10);
+    if (isFinite(newDay) && newDay >= 1 && newDay <= 28) {
+        budgetSettings.cycleStartDay = newDay;
+        save(); render();
+    } else { alert("Invalid day. Please enter a number between 1 and 28."); }
+}
+
+function manageCategory(index) {
+    const cat = categories[index]; const action = prompt(`Type 'edit' or 'delete' for "${cat.name}".`, "edit");
+    if (!action) return;
+    if (action.toLowerCase() === 'delete') {
+        if (confirm(`Delete "${cat.name}"?`)) { categories.splice(index, 1); save(); render(); }
+    } else if (action.toLowerCase() === 'edit') {
+        const newName = prompt("Rename category:", cat.name); if (newName === null) return;
+        const newBudget = parseInt(prompt("Set new budget:", String(Math.round(cat.budget))), 10);
+        if (!isFinite(newBudget) || newBudget < 0) return alert("Enter a valid budget.");
+        categories[index].name = newName.trim() || cat.name; categories[index].budget = Math.round(newBudget);
+        save(); render();
+    }
+}
+
+function closeModal() { document.getElementById('historyModal').style.display = 'none'; }
+
+function showHistory(catIndex) {
+    const modal = document.getElementById('historyModal'), modalTitle = document.getElementById('modalTitle'), modalBody = document.getElementById('modalBody'), cat = categories[catIndex];
+    modalTitle.textContent = `Full History for: ${escapeHtml(cat.name)}`; modalBody.innerHTML = '';
+    if (cat.expenses.length === 0) { modalBody.innerHTML = '<p>No expenses recorded yet.</p>'; } else {
+        [...cat.expenses].map((exp, expIndex) => ({ ...exp, originalIndex: expIndex })).sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(exp => {
+            const itemDiv = document.createElement('div'); itemDiv.className = 'history-item';
+            itemDiv.innerHTML = `<div class="history-details"><span class="desc">₹${exp.amount} - ${escapeHtml(exp.description)}</span><span class="date">${exp.date}</span></div><div class="history-actions"><button class="btn" onclick="editExpense(${catIndex}, ${exp.originalIndex})">Edit</button><button class="btn" onclick="deleteExpense(${catIndex}, ${exp.originalIndex})">Delete</button></div>`;
+            modalBody.appendChild(itemDiv);
+        });
+    }
+    modal.style.display = 'block';
+}
+
+function deleteExpense(catIndex, expIndex) {
+    if (!confirm("Delete this expense?")) return;
+    categories[catIndex].expenses.splice(expIndex, 1);
+    save(); render(); showHistory(catIndex);
+}
+
+function editExpense(catIndex, expIndex) {
+    const exp = categories[catIndex].expenses[expIndex];
+    const newDate = prompt("Date:", exp.date); if (newDate === null) return;
+    const newDesc = prompt("Description:", exp.description); if (newDesc === null) return;
+    const newAmount = parseFloat(prompt("Amount:", exp.amount)); if (!isFinite(newAmount) || newAmount <= 0) return alert("Invalid amount.");
+    categories[catIndex].expenses[expIndex] = { amount: newAmount, description: newDesc.trim(), date: newDate };
+    save(); render(); showHistory(catIndex);
+}
+
+function updatePieChart(cycleStartDate, cycleEndDate) {
+    const chartData = { labels: [], data: [], colors: [] };
+    categories.forEach((cat, index) => {
+        const spentInCycle = cat.expenses.filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate).reduce((acc, curr) => acc + curr.amount, 0);
+        if (spentInCycle > 0) { chartData.labels.push(cat.name); chartData.data.push(spentInCycle); chartData.colors.push(CHART_COLORS[index % CHART_COLORS.length]); }
+    });
+    const ctx = document.getElementById('expensePieChart').getContext('2d');
+    if (expensePieChart) {
+        expensePieChart.data.labels = chartData.labels; expensePieChart.data.datasets[0].data = chartData.data;
+        expensePieChart.data.datasets[0].backgroundColor = chartData.colors; expensePieChart.update();
+    } else {
+        expensePieChart = new Chart(ctx, { type: 'pie', data: { labels: chartData.labels, datasets: [{ data: chartData.data, backgroundColor: chartData.colors, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'Expenses This Cycle', color: 'white', font: { size: 16 } } } } });
+    }
+}
+
+function renderHistoricalSummary() {
+    const container = document.getElementById('historicalSummary');
+    container.innerHTML = '<h3>Last 6 Months\' Spending</h3>';
+    const totalBudget = categories.reduce((acc, cat) => acc + cat.budget, 0);
+
+    for (let i = 0; i < 6; i++) {
+        const monthDate = new Date();
+        monthDate.setMonth(monthDate.getMonth() - i);
+        const { cycleStartDate, cycleEndDate } = getCycleDates(monthDate);
+
+        const monthDiv = document.createElement('div');
+        monthDiv.className = 'hist-month-bar';
+        const label = document.createElement('div');
+        label.className = 'label';
+        // UPDATED LINE FOR HISTORICAL CYCLE DISPLAY
+        label.textContent = `${cycleStartDate.toLocaleDateString('en-GB')} - ${cycleEndDate.toLocaleDateString('en-GB')}`;
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'multi-progress-bar';
+
+        let totalSpentInMonth = 0;
+        categories.forEach((cat, catIndex) => {
+            const spentInMonth = cat.expenses
+                .filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate)
+                .reduce((acc, curr) => acc + curr.amount, 0);
+            totalSpentInMonth += spentInMonth;
+            
+            if (spentInMonth > 0) {
+                const segment = document.createElement('div');
+                segment.className = 'multi-progress-bar-segment';
+                const percentage = totalBudget > 0 ? (spentInMonth / totalBudget) * 100 : 0;
+                segment.style.width = `${percentage}%`;
+                segment.style.backgroundColor = CHART_COLORS[catIndex % CHART_COLORS.length];
+                segment.title = `${cat.name}: ₹${Math.round(spentInMonth)}`;
+                progressBar.appendChild(segment);
+            }
+        });
+        
+        if (totalSpentInMonth > 0) {
+           monthDiv.appendChild(label);
+           monthDiv.appendChild(progressBar);
+           container.appendChild(monthDiv);
+        }
+    }
+}
+
+function exportCSV() {
+    let csvContent = "Category,Date,Description,Amount\n";
+    categories.forEach(cat => { cat.expenses.forEach(exp => { csvContent += [cat.name, exp.date, `"${exp.description.replace(/"/g, '""')}"`, exp.amount].join(",") + "\n"; }); });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob); link.download = `budget_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+window.onclick = function(event) { if (event.target == document.getElementById('historyModal')) { closeModal(); } }
+
+render();
+</script>
+</body>
+</html>
