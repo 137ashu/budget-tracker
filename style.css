@@ -1,0 +1,38 @@
+body { font-family: "Segoe UI", sans-serif; background-color: #f2f8f5; margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+.container { width: 92%; max-width: 640px; margin: 40px auto; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); overflow: hidden; }
+.header { background-color: #157F4C; color: white; padding: 12px 18px; text-align: center; font-size: 1.4rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+#userInfo { font-size: 0.9rem; text-align: left; }
+.header .title { flex-grow: 1; text-align: center; }
+#authButton { background-color: #f2f8f5; color: #076442; font-weight: 700; padding: 6px 10px; font-size: 0.9rem; }
+.settings-btn { background: none; border: none; font-size: 1.5rem; color: white; cursor: pointer; padding: 0 10px; }
+.cycle-nav { background-color: #116a40; color: #e0f2f1; text-align: center; padding: 6px; font-size: 0.9rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.cycle-nav button { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; font-weight: bold; padding: 0 15px; }
+#categories { padding: 12px 12px 6px 12px; }
+.category { background-color: #EAF8F1; border: 1px solid #36C591; border-radius: 10px; margin: 12px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+.category-top { display:flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cat-left { font-weight: 700; color:#0f5e3e; }
+.cat-right { display: flex; align-items: center; gap: 8px; font-weight:700; color:#0f5e3e; font-size:0.95rem; }
+.cat-right .negative { color:#b91c1c; }
+.progress { background-color: #e9efe9; border-radius: 10px; height: 24px; margin-bottom: 10px; overflow: hidden; position: relative; }
+.progress-bar { background-color: #67D5AD; height: 100%; width: 100%; display:flex; align-items:center; justify-content:center; color: #064a36; font-weight: 700; transition: width 0.35s ease; font-size: 0.9rem; }
+.controls { display: flex; flex-direction: column; gap: 8px; }
+.controls-bottom { display: flex; gap: 8px; align-items: center; }
+input[type="text"], input[type="number"], input[type="date"] { padding: 8px 10px; border-radius: 6px; border: 1px solid #cfdccc; font-size: 0.95rem; box-sizing: border-box; font-family: "Segoe UI", sans-serif; }
+.controls-bottom input[type="number"] { width: 100px; }
+.controls-bottom input[type="date"] { flex: 1; }
+.controls-bottom .btn { flex-shrink: 0; }
+.btn { background-color: #076442; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-family: "Segoe UI", sans-serif; }
+.icon-btn { background-color: #076442; color: white; border: none; border-radius: 6px; padding: 4px 8px; font-size: 1rem; cursor: pointer; line-height: 1; }
+.add-block { padding: 12px; margin: 0 12px 12px 12px; display:flex; gap:8px; align-items:center; justify-content:center; }
+.summary { background-color: #157F4C; color: white; padding: 14px; text-align: center; border-radius: 0 0 12px 12px; font-size: 1rem; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#historicalSummary { padding: 12px; }
+#historicalSummary h3 { color: #0f5e3e; text-align: center; margin-top: 10px; margin-bottom: 15px; }
+.hist-month-bar { margin-bottom: 12px; }
+.hist-month-bar .label { font-weight: 600; font-size: 0.9rem; color: #333; margin-bottom: 4px; }
+.multi-progress-bar { display: flex; height: 22px; background-color: #e9efe9; border-radius: 8px; overflow: hidden; width: 100%; }
+.multi-progress-bar-segment { height: 100%; transition: width 0.3s ease; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+.close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+#appLoader { text-align: center; padding: 40px; font-size: 1.2rem; color: #0f5e3e; }
