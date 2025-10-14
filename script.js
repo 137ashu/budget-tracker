@@ -1,25 +1,25 @@
-// Import the libraries we need. This is the modern, CSP-compliant way.
-import "https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js";
-import "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js";
-import "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js";
+// --- MODERN FIREBASE v9+ IMPORTS ---
+// This new syntax is modular and CSP-compliant.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { Chart } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.js';
-
 
 // --- FIREBASE SETUP ---
 const firebaseConfig = {
   apiKey: "AIzaSyCnbm3WlbPU2KiL5jVZatTQg1PMMGW-lNo",
   authDomain: "my-budget-tracker-b22b2.firebaseapp.com",
   projectId: "my-budget-tracker-b22b2",
-  storageBucket: "my-budget-tracker-b22b2.appspot.com",
+  storageBucket: "my-budget-tracker-b22b2.firebasestorage.app",
   messagingSenderId: "411372843389",
   appId: "1:411372843389:web:78c5b98f1d4b7910dcdc14",
   measurementId: "G-WDG0G61K4X"
 };
 
-// Use the compat libraries for the v8 syntax we are familiar with
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Initialize Firebase with the new syntax
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 let currentUser;
 let categories = [];
 let budgetSettings = { cycleStartDay: 1 };
@@ -31,12 +31,12 @@ const CHART_COLORS = ['#4CAF50','#2196F3','#FFC107','#E91E63','#9C27B0','#FF9800
 
 // --- AUTHENTICATION ---
 function signInWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(error => console.error("Sign in error", error));
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider).catch(error => console.error("Sign in error", error));
 }
-function signOutUser() { auth.signOut(); }
+function signOutUser() { signOut(auth); }
 
-auth.onAuthStateChanged(async user => {
+onAuthStateChanged(auth, async user => {
   const appContent = document.getElementById('appContent');
   const appLoader = document.getElementById('appLoader');
   const authButton = document.getElementById('authButton');
@@ -46,11 +46,13 @@ auth.onAuthStateChanged(async user => {
     currentUser = user;
     appLoader.textContent = `Loading data for ${user.displayName.split(' ')[0]}...`;
     
-    const settingsDoc = await db.collection('users').doc(currentUser.uid).get();
-    if (settingsDoc.exists && settingsDoc.data().settings) {
+    const settingsRef = doc(db, 'users', currentUser.uid);
+    const settingsDoc = await getDoc(settingsRef);
+
+    if (settingsDoc.exists() && settingsDoc.data().settings) {
         budgetSettings = settingsDoc.data().settings;
     } else {
-        db.collection('users').doc(currentUser.uid).set({ settings: budgetSettings });
+        await setDoc(settingsRef, { settings: budgetSettings });
     }
 
     userInfoDiv.textContent = `Hi, ${user.displayName.split(' ')[0]}`;
@@ -71,72 +73,67 @@ auth.onAuthStateChanged(async user => {
 
 // --- DATA & RENDERING LOGIC ---
 async function render() {
-  if (!currentUser) return;
-  const { cycleStartDate, cycleEndDate } = getCycleDates(viewingDate);
-  document.getElementById('cycleDisplay').textContent = 
-    `${cycleStartDate.toLocaleDateString('en-GB')} - ${cycleEndDate.toLocaleDateString('en-GB')}`;
-
-  const categoriesSnapshot = await db.collection('users').doc(currentUser.uid).collection('categories').get();
-  categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  const container = document.getElementById("categories");
-  container.innerHTML = "";
-  let totalBudget = 0, totalSpentInCycle = 0;
-
-  categories.forEach(cat => {
-    const expensesInCycle = cat.expenses.filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate);
-    const spentInCycle = expensesInCycle.reduce((acc, curr) => acc + curr.amount, 0);
-    const bud = Math.round(cat.budget);
-    const remainingInCycle = bud - spentInCycle;
-    totalBudget += bud; totalSpentInCycle += spentInCycle;
-    let percentRemaining = Math.max(0, Math.min(100, isFinite((remainingInCycle / bud) * 100) ? (remainingInCycle / bud) * 100 : 0));
-    const item = document.createElement("div"); item.className = "category";
-    item.innerHTML = `
-      <div class="category-top">
-        <div class="cat-left">${escapeHtml(cat.name)}</div>
-        <div class="cat-right">
-          <span><span class="${remainingInCycle < 0 ? 'negative' : ''}">${Math.round(remainingInCycle)}</span> / ${bud}</span>
-          <button class="icon-btn" data-action="show-history" data-id="${cat.id}" title="View Full History">🕰️</button>
-          <button class="icon-btn" data-action="manage-category" data-id="${cat.id}" title="Manage Category">✏️</button>
+    if (!currentUser) return;
+    const { cycleStartDate, cycleEndDate } = getCycleDates(viewingDate);
+    document.getElementById('cycleDisplay').textContent = 
+      `${cycleStartDate.toLocaleDateString('en-GB')} - ${cycleEndDate.toLocaleDateString('en-GB')}`;
+  
+    const categoriesCol = collection(db, 'users', currentUser.uid, 'categories');
+    const categoriesSnapshot = await getDocs(categoriesCol);
+    categories = categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+    const container = document.getElementById("categories");
+    container.innerHTML = "";
+    let totalBudget = 0, totalSpentInCycle = 0;
+  
+    categories.forEach(cat => {
+      const expensesInCycle = cat.expenses.filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate);
+      const spentInCycle = expensesInCycle.reduce((acc, curr) => acc + curr.amount, 0);
+      const bud = Math.round(cat.budget);
+      const remainingInCycle = bud - spentInCycle;
+      totalBudget += bud; totalSpentInCycle += spentInCycle;
+      let percentRemaining = Math.max(0, Math.min(100, isFinite((remainingInCycle / bud) * 100) ? (remainingInCycle / bud) * 100 : 0));
+      const item = document.createElement("div"); item.className = "category";
+      item.innerHTML = `
+        <div class="category-top">
+          <div class="cat-left">${escapeHtml(cat.name)}</div>
+          <div class="cat-right">
+            <span><span class="${remainingInCycle < 0 ? 'negative' : ''}">${Math.round(remainingInCycle)}</span> / ${bud}</span>
+            <button class="icon-btn" data-action="show-history" data-id="${cat.id}" title="View Full History">🕰️</button>
+            <button class="icon-btn" data-action="manage-category" data-id="${cat.id}" title="Manage Category">✏️</button>
+          </div>
         </div>
-      </div>
-      <div class="progress"><div class="progress-bar" style="width: ${percentRemaining}%;">${Math.floor(percentRemaining)}%</div></div>
-      <div class="controls">
-        <input type="text" id="desc-${cat.id}" placeholder="Expense description" />
-        <div class="controls-bottom">
-            <input type="number" id="expense-${cat.id}" placeholder="Amount" min="0" />
-            <input type="date" id="date-${cat.id}" value="${new Date().toISOString().slice(0, 10)}"/>
-            <button class="btn" data-action="add-expense" data-id="${cat.id}">Add</button>
-        </div>
-      </div>`;
-    container.appendChild(item);
-  });
-  document.getElementById("totalBudget").textContent = `Total Budget: ₹${totalBudget}`;
-  document.getElementById("totalSpent").textContent = `Total Spent (this cycle): ₹${Math.round(totalSpentInCycle)}`;
-  document.getElementById("totalRemaining").textContent = `Remaining (this cycle): ₹${Math.round(totalBudget - totalSpentInCycle)}`;
-  updatePieChart(cycleStartDate, cycleEndDate);
-  renderHistoricalSummary();
+        <div class="progress"><div class="progress-bar" style="width: ${percentRemaining}%;">${Math.floor(percentRemaining)}%</div></div>
+        <div class="controls">
+          <input type="text" id="desc-${cat.id}" placeholder="Expense description" />
+          <div class="controls-bottom">
+              <input type="number" id="expense-${cat.id}" placeholder="Amount" min="0" />
+              <input type="date" id="date-${cat.id}" value="${new Date().toISOString().slice(0, 10)}"/>
+              <button class="btn" data-action="add-expense" data-id="${cat.id}">Add</button>
+          </div>
+        </div>`;
+      container.appendChild(item);
+    });
+    document.getElementById("totalBudget").textContent = `Total Budget: ₹${totalBudget}`;
+    document.getElementById("totalSpent").textContent = `Total Spent (this cycle): ₹${Math.round(totalSpentInCycle)}`;
+    document.getElementById("totalRemaining").textContent = `Remaining (this cycle): ₹${Math.round(totalBudget - totalSpentInCycle)}`;
+    updatePieChart(cycleStartDate, cycleEndDate);
+    renderHistoricalSummary();
 }
 
 // --- EVENT HANDLING ---
 document.addEventListener('DOMContentLoaded', () => {
   const authButton = document.getElementById('authButton');
   authButton.addEventListener('click', () => {
-    if (currentUser) {
-      signOutUser();
-    } else {
-      signInWithGoogle();
-    }
+    if (currentUser) signOutUser(); else signInWithGoogle();
   });
 
   document.body.addEventListener('click', (event) => {
     const target = event.target.closest('[data-action]');
     if (!target) return;
-
     const action = target.dataset.action;
     const categoryId = target.dataset.id;
     const expenseId = target.dataset.expenseId;
-
     switch (action) {
       case 'add-category': addCategory(); break;
       case 'add-expense': addExpense(categoryId); break;
@@ -152,13 +149,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// --- CORE FUNCTIONS ---
+// --- CORE FUNCTIONS (using v9 syntax) ---
 async function addCategory() {
   if (!currentUser) return;
   const name = document.getElementById("newName").value.trim();
   const budget = parseFloat(document.getElementById("newBudget").value);
   if (!name || !isFinite(budget) || budget <= 0) return alert("Enter valid name and budget");
-  await db.collection('users').doc(currentUser.uid).collection('categories').add({ name, budget: Math.round(budget), expenses: [] });
+  
+  const categoriesCol = collection(db, 'users', currentUser.uid, 'categories');
+  await addDoc(categoriesCol, { name, budget: Math.round(budget), expenses: [] });
+  
   document.getElementById("newName").value = ""; document.getElementById("newBudget").value = "";
   render();
 }
@@ -168,26 +168,31 @@ async function addExpense(categoryId) {
   const description = document.getElementById(`desc-${categoryId}`).value.trim();
   const date = document.getElementById(`date-${categoryId}`).value;
   if (!amount || amount <= 0 || !description || !date) return alert("Please fill all expense fields.");
+  
   const newExpense = { amount, description, date, id: Date.now() + Math.random() };
-  const categoryRef = db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId);
-  await categoryRef.update({ expenses: firebase.firestore.FieldValue.arrayUnion(newExpense) });
+  const categoryRef = doc(db, 'users', currentUser.uid, 'categories', categoryId);
+  await updateDoc(categoryRef, { expenses: arrayUnion(newExpense) });
+  
   document.getElementById(`expense-${categoryId}`).value = ""; document.getElementById(`desc-${categoryId}`).value = "";
   render();
 }
 async function manageCategory(categoryId) {
     if (!currentUser) return;
-    const catRef = db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId);
-    const doc = await catRef.get();
-    const cat = doc.data();
+    const catRef = doc(db, 'users', currentUser.uid, 'categories', categoryId);
+    const docSnap = await getDoc(catRef);
+    if (!docSnap.exists()) return;
+
+    const cat = docSnap.data();
     const action = prompt(`Type 'edit' or 'delete' for "${cat.name}".`, "edit");
     if (!action) return;
+
     if (action.toLowerCase() === 'delete') {
-      if (confirm(`Delete "${cat.name}"?`)) { await catRef.delete(); render(); }
+      if (confirm(`Delete "${cat.name}"?`)) { await deleteDoc(catRef); render(); }
     } else if (action.toLowerCase() === 'edit') {
       const newName = prompt("Rename category:", cat.name); if (newName === null) return;
       const newBudget = parseInt(prompt("Set new budget:", String(Math.round(cat.budget))), 10);
       if (!isFinite(newBudget) || newBudget < 0) return alert("Enter a valid budget.");
-      await catRef.update({ name: newName.trim() || cat.name, budget: Math.round(newBudget) });
+      await updateDoc(catRef, { name: newName.trim() || cat.name, budget: Math.round(newBudget) });
       render();
     }
 }
@@ -210,33 +215,40 @@ async function showHistory(categoryId) {
 async function deleteExpense(categoryId, expenseId) {
   expenseId = Number(expenseId);
   if (!confirm("Delete this expense?")) return;
-  const catRef = db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId);
-  const doc = await catRef.get();
-  const updatedExpenses = doc.data().expenses.filter(exp => exp.id !== expenseId);
-  await catRef.update({ expenses: updatedExpenses });
-  const cat = categories.find(c => c.id === categoryId);
-  if (cat) cat.expenses = updatedExpenses;
-  showHistory(categoryId);
+  const catRef = doc(db, 'users', currentUser.uid, 'categories', categoryId);
+  const docSnap = await getDoc(catRef);
+  if (!docSnap.exists()) return;
+  
+  const expenseToDelete = docSnap.data().expenses.find(exp => exp.id === expenseId);
+  if (expenseToDelete) {
+    await updateDoc(catRef, { expenses: arrayRemove(expenseToDelete) });
+  }
+
   render();
+  setTimeout(() => showHistory(categoryId), 100); // Allow render to finish before refreshing modal
 }
 async function editExpense(categoryId, expenseId) {
     expenseId = Number(expenseId);
-    const catRef = db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId);
-    const doc = await catRef.get();
-    let expenses = doc.data().expenses;
+    const catRef = doc(db, 'users', currentUser.uid, 'categories', categoryId);
+    const docSnap = await getDoc(catRef);
+    if (!docSnap.exists()) return;
+
+    let expenses = docSnap.data().expenses;
     const expIndex = expenses.findIndex(e => e.id === expenseId);
     if (expIndex === -1) return;
     const exp = expenses[expIndex];
+    
     const newDate = prompt("Date:", exp.date); if (newDate === null) return;
     const newDesc = prompt("Description:", exp.description); if (newDesc === null) return;
     const newAmount = parseFloat(prompt("Amount:", exp.amount)); if (!isFinite(newAmount) || newAmount <= 0) return alert("Invalid amount.");
+    
     expenses[expIndex] = { ...exp, amount: newAmount, description: newDesc.trim(), date: newDate };
-    await catRef.update({ expenses });
-    const cat = categories.find(c => c.id === categoryId);
-    if (cat) cat.expenses = expenses;
-    showHistory(categoryId);
+    await updateDoc(catRef, { expenses });
+
     render();
+    setTimeout(() => showHistory(categoryId), 100);
 }
+// All other utility functions (closeModal, escapeHtml, getCycleDates, updatePieChart, etc.) remain unchanged.
 function closeModal() { document.getElementById('historyModal').style.display = 'none'; }
 window.onclick = function(event) { if (event.target == document.getElementById('historyModal')) { closeModal(); } }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
