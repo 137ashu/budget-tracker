@@ -1,0 +1,5 @@
+# This rule makes budprog.html the homepage
+[[redirects]]
+  from = "/"
+  to = "/budprog.html"
+  status = 200 # This means "OK" (not a real redirect)
