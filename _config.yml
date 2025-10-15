@@ -1,5 +1,0 @@
-# This file sets the custom HTTP headers for our GitHub Pages site.
-# This header allows Firebase (with unsafe-eval) and Chart.js to run.
-headers:
-  "/*":
-    "Content-Security-Policy": "script-src 'self' 'unsafe-eval' https://www.gstatic.com https://*.firebaseio.com https://cdn.jsdelivr.net;"
