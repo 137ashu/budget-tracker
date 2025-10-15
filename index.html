@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Monthly Budget Tracker</title>
+  
+  <!-- Link to the external stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- The Firebase and Chart.js libraries will be imported directly in our script.js file -->
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div id="userInfo"></div>
+      <div class="title">💰 Budget Tracker</div>
+      <button id="authButton" class="btn">Sign In</button>
+    </div>
+
+    <div id="appContent" style="display: none;">
+      <div class="cycle-nav">
+        <button data-action="prev-cycle" title="Previous Month">‹</button>
+        <span id="cycleDisplay"></span>
+        <button data-action="next-cycle" title="Next Month">›</button>
+      </div>
+
+      <div id="categories" aria-live="polite"></div>
+
+      <div class="add-block">
+        <input id="newName" type="text" placeholder="New category name" />
+        <input id="newBudget" type="number" placeholder="Budget amount" />
+        <button class="btn" data-action="add-category">Add Category</button>
+      </div>
+
+      <div class="summary" id="summary">
+        <div id="totalBudget">Total Budget: ₹0</div>
+        <div id="totalSpent">Total Spent (this cycle): ₹0</div>
+        <div id="totalRemaining">Remaining (this cycle): ₹0</div>
+        <div class="chart-container"><canvas id="expensePieChart"></canvas></div>
+        <div class="export-buttons"><button class="btn" data-action="export-csv">Export All Data (CSV)</button></div>
+      </div>
+      
+      <div id="historicalSummary"></div>
+    </div>
+    <div id="appLoader">Loading...</div>
+  </div>
+
+  <div id="historyModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle"></h3>
+        <span class="close-btn" data-action="close-modal">&times;</span>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Link to the external JavaScript file. 'type="module"' is crucial for Firebase imports. -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
