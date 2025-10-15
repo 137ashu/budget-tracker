@@ -1,9 +1,8 @@
 // --- MODERN FIREBASE v9+ IMPORTS ---
-// This new syntax is modular and CSP-compliant.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithRedirect, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { Chart } from 'https://cdn.jsdelivr.net/npm/chart.js/dist/chart.js';
+// Chart.js import has been removed
 
 // --- FIREBASE SETUP ---
 const firebaseConfig = {
@@ -16,7 +15,6 @@ const firebaseConfig = {
   measurementId: "G-WDG0G61K4X"
 };
 
-// Initialize Firebase with the new syntax
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -24,17 +22,27 @@ let currentUser;
 let categories = [];
 let budgetSettings = { cycleStartDay: 1 };
 let viewingDate = new Date();
-let expensePieChart;
+// expensePieChart variable has been removed
 // --- END FIREBASE SETUP ---
 
+// CHART_COLORS is still needed for the historical progress bars
 const CHART_COLORS = ['#4CAF50','#2196F3','#FFC107','#E91E63','#9C27B0','#FF9800','#00BCD4','#8BC34A','#607D8B','#FF5722'];
 
-// --- AUTHENTICATION ---
+// --- AUTHENTICATION (Using Redirect Flow) ---
 function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
-  signInWithPopup(auth, provider).catch(error => console.error("Sign in error", error));
+  signInWithRedirect(auth, provider);
 }
 function signOutUser() { signOut(auth); }
+
+getRedirectResult(auth)
+  .then((result) => {
+    if (result && result.user) {
+        console.log("User signed in via redirect:", result.user.displayName);
+    }
+  }).catch((error) => {
+    console.error("Error getting redirect result:", error);
+  });
 
 onAuthStateChanged(auth, async user => {
   const appContent = document.getElementById('appContent');
@@ -117,7 +125,7 @@ async function render() {
     document.getElementById("totalBudget").textContent = `Total Budget: ₹${totalBudget}`;
     document.getElementById("totalSpent").textContent = `Total Spent (this cycle): ₹${Math.round(totalSpentInCycle)}`;
     document.getElementById("totalRemaining").textContent = `Remaining (this cycle): ₹${Math.round(totalBudget - totalSpentInCycle)}`;
-    updatePieChart(cycleStartDate, cycleEndDate);
+    // updatePieChart() call has been removed
     renderHistoricalSummary();
 }
 
@@ -149,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// --- CORE FUNCTIONS (using v9 syntax) ---
+// --- CORE FUNCTIONS ---
 async function addCategory() {
   if (!currentUser) return;
   const name = document.getElementById("newName").value.trim();
@@ -225,7 +233,7 @@ async function deleteExpense(categoryId, expenseId) {
   }
 
   render();
-  setTimeout(() => showHistory(categoryId), 100); // Allow render to finish before refreshing modal
+  setTimeout(() => showHistory(categoryId), 100);
 }
 async function editExpense(categoryId, expenseId) {
     expenseId = Number(expenseId);
@@ -248,7 +256,6 @@ async function editExpense(categoryId, expenseId) {
     render();
     setTimeout(() => showHistory(categoryId), 100);
 }
-// All other utility functions (closeModal, escapeHtml, getCycleDates, updatePieChart, etc.) remain unchanged.
 function closeModal() { document.getElementById('historyModal').style.display = 'none'; }
 window.onclick = function(event) { if (event.target == document.getElementById('historyModal')) { closeModal(); } }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
@@ -261,19 +268,6 @@ function getCycleDates(dateForCycle) {
     return { cycleStartDate, cycleEndDate };
 }
 function navigateCycle(direction) { viewingDate.setMonth(viewingDate.getMonth() + direction); render(); }
-function updatePieChart(cycleStartDate, cycleEndDate) {
-    const chartData = { labels: [], data: [], colors: [] };
-    categories.forEach((cat, index) => {
-        const spentInCycle = cat.expenses.filter(exp => new Date(exp.date) >= cycleStartDate && new Date(exp.date) <= cycleEndDate).reduce((acc, curr) => acc + curr.amount, 0);
-        if (spentInCycle > 0) { chartData.labels.push(cat.name); chartData.data.push(spentInCycle); chartData.colors.push(CHART_COLORS[index % CHART_COLORS.length]); }
-    });
-    const ctx = document.getElementById('expensePieChart').getContext('2d');
-    if (expensePieChart) {
-        expensePieChart.data.labels = chartData.labels; expensePieChart.data.datasets[0].data = chartData.data; expensePieChart.data.datasets[0].backgroundColor = chartData.colors; expensePieChart.update();
-    } else {
-        expensePieChart = new Chart(ctx, { type: 'pie', data: { labels: chartData.labels, datasets: [{ data: chartData.data, backgroundColor: chartData.colors, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'Expenses This Cycle', color: 'white', font: { size: 16 } } } } });
-    }
-}
 function renderHistoricalSummary() {
     const container = document.getElementById('historicalSummary');
     container.innerHTML = '<h3>Last 6 Months\' Spending</h3>';

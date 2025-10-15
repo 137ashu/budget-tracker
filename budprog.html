@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Monthly Budget Tracker</title>
   
-  <!-- Link to the external stylesheet -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- The Firebase and Chart.js libraries will be imported directly in our script.js file -->
 </head>
 <body>
   <div class="container">
@@ -37,7 +34,7 @@
         <div id="totalBudget">Total Budget: ₹0</div>
         <div id="totalSpent">Total Spent (this cycle): ₹0</div>
         <div id="totalRemaining">Remaining (this cycle): ₹0</div>
-        <div class="chart-container"><canvas id="expensePieChart"></canvas></div>
+        <!-- The chart container has been removed from here -->
         <div class="export-buttons"><button class="btn" data-action="export-csv">Export All Data (CSV)</button></div>
       </div>
       
@@ -56,7 +53,7 @@
     </div>
   </div>
 
-  <!-- Link to the external JavaScript file. 'type="module"' is crucial for Firebase imports. -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
+
